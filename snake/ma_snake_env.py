@@ -44,14 +44,13 @@ class SnakeGameEnv(gym.Env):
 
     def _get_obs(self):
         return np.array(
-            self.game.snake_position + self.game.target_position, dtype=np.int32
+            self.game.snake_body[0] + self.game.target_position, dtype=np.int32
         )
 
     def _get_info(self):
         return {
             "snake_to_target_distance": np.linalg.norm(
-                np.array(self.game.snake_position)
-                - np.array(self.game.target_position),
+                np.array(self.game.snake_body[0]) - np.array(self.game.target_position),
                 ord=1,
             )
         }
@@ -70,10 +69,11 @@ class SnakeGameEnv(gym.Env):
 
     def step(self, action):
         prev_distance = self._get_info()["snake_to_target_distance"]
-        target_reached = self.game.perform_action(snake.SnakeAction(action))
+        collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
         reward = 0
         new_distance = self._get_info()["snake_to_target_distance"]
         done = False
+
         if new_distance < prev_distance:
             reward = 0.1
         elif new_distance > prev_distance:
@@ -81,6 +81,9 @@ class SnakeGameEnv(gym.Env):
 
         if target_reached:
             reward = 1
+
+        if collided:
+            reward = -1
             done = True
 
         info = self._get_info()
@@ -96,11 +99,11 @@ class SnakeGameEnv(gym.Env):
 
 
 def visualize_random():
-    env = gym.make("ma_snake_env", render_mode=None)
+    env = gym.make("ma_snake_env", render_mode="human")
     print("Checking environment")
     check_env(env.unwrapped)
     print("Environment checked")
-    episodes = 3
+    episodes = 5
     scores = []
     for episode in range(episodes):
         obs, info = env.reset()
@@ -109,6 +112,7 @@ def visualize_random():
         while not done:
             action = env.action_space.sample()
             obs, reward, done, _, info = env.step(action)
+            print("Episode:", episode)
             print("Action:", action)
             print("Observation:", obs)
             print("Reward:", reward)

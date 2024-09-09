@@ -21,7 +21,7 @@ class SnakeGame:
         self.snake_body = [[5, 5]]
         self.fps = fps
         self.reset()
-        self.last_action = SnakeAction.MOVE_DOWN
+        self.current_direction = SnakeAction.MOVE_DOWN
         self._init_pygame()
 
     def _init_pygame(self):
@@ -72,38 +72,53 @@ class SnakeGame:
 
     def _move_snake(self, new_head):
         self.snake_body.insert(0, new_head)
-        if not self._checkFoundTarget():
+        found_target = self._checkFoundTarget()
+        collided = self._check_collision()
+        if not found_target:
             self.snake_body.pop()
-        if self._check_collision():
-            self.reset()
+        return collided, found_target
 
-    def perform_action(self, action) -> bool:
+    def perform_action(self, action) -> tuple[bool, bool]:
         if action == SnakeAction.NOOP:
-            return False
-        if action == SnakeAction.MOVE_UP:
-            if self.last_action == SnakeAction.MOVE_DOWN:
-                return False
+            return False, False
+
+        if (
+            action == SnakeAction.MOVE_UP
+            and self.current_direction != SnakeAction.MOVE_DOWN
+        ):
             new_head = [self.snake_body[0][0] - 1, self.snake_body[0][1]]
-            self._move_snake(new_head)
-        elif action == SnakeAction.MOVE_DOWN:
-            if self.last_action == SnakeAction.MOVE_UP:
-                return False
+            collided, found_target = self._move_snake(new_head)
+            self.current_direction = SnakeAction.MOVE_UP
+            return collided, found_target
+
+        elif (
+            action == SnakeAction.MOVE_DOWN
+            and self.current_direction != SnakeAction.MOVE_UP
+        ):
             new_head = [self.snake_body[0][0] + 1, self.snake_body[0][1]]
-            self._move_snake(new_head)
+            collided, found_target = self._move_snake(new_head)
+            self.current_direction = SnakeAction.MOVE_DOWN
+            return collided, found_target
 
-        elif action == SnakeAction.MOVE_LEFT:
-            if self.last_action == SnakeAction.MOVE_RIGHT:
-                return False
+        elif (
+            action == SnakeAction.MOVE_LEFT
+            and self.current_direction != SnakeAction.MOVE_RIGHT
+        ):
             new_head = [self.snake_body[0][0], self.snake_body[0][1] - 1]
-            self._move_snake(new_head)
+            collided, found_target = self._move_snake(new_head)
+            self.current_direction = SnakeAction.MOVE_LEFT
+            return collided, found_target
 
-        elif action == SnakeAction.MOVE_RIGHT:
-            if self.last_action == SnakeAction.MOVE_LEFT:
-                return False
+        elif (
+            action == SnakeAction.MOVE_RIGHT
+            and self.current_direction != SnakeAction.MOVE_LEFT
+        ):
             new_head = [self.snake_body[0][0], self.snake_body[0][1] + 1]
-            self._move_snake(new_head)
+            collided, found_target = self._move_snake(new_head)
+            self.current_direction = SnakeAction.MOVE_RIGHT
+            return collided, found_target
 
-        return False
+        return False, False
 
     def render(self):
         self.window.fill((0, 0, 0))
@@ -138,17 +153,17 @@ class SnakeGame:
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    if self.last_action != SnakeAction.MOVE_DOWN:
-                        self.last_action = SnakeAction.MOVE_UP
+                    if self.current_direction != SnakeAction.MOVE_DOWN:
+                        self.current_direction = SnakeAction.MOVE_UP
                 elif event.key == pygame.K_DOWN:
-                    if self.last_action != SnakeAction.MOVE_UP:
-                        self.last_action = SnakeAction.MOVE_DOWN
+                    if self.current_direction != SnakeAction.MOVE_UP:
+                        self.current_direction = SnakeAction.MOVE_DOWN
                 elif event.key == pygame.K_LEFT:
-                    if self.last_action != SnakeAction.MOVE_RIGHT:
-                        self.last_action = SnakeAction.MOVE_LEFT
+                    if self.current_direction != SnakeAction.MOVE_RIGHT:
+                        self.current_direction = SnakeAction.MOVE_LEFT
                 elif event.key == pygame.K_RIGHT:
-                    if self.last_action != SnakeAction.MOVE_LEFT:
-                        self.last_action = SnakeAction.MOVE_RIGHT
+                    if self.current_direction != SnakeAction.MOVE_LEFT:
+                        self.current_direction = SnakeAction.MOVE_RIGHT
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
@@ -161,7 +176,7 @@ def main():
 
     while running:
         running = not game._process_events()
-        game.perform_action(game.last_action)
+        game.perform_action(game.current_direction)
         game.render()
 
 
