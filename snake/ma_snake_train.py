@@ -55,7 +55,8 @@ def test_model(model_name: str, record: bool):
     obs = env.reset()[0]
     done = False
     score = 0
-    env.start_video_recorder();
+    if record: 
+        env.start_video_recorder();
     episodes = 0
     while episodes < 10:
         action, _ = model.predict(observation=obs, deterministic=True)
@@ -68,7 +69,8 @@ def test_model(model_name: str, record: bool):
             episodes += 1
             env.reset()
             
-    env.close_video_recorder();
+    if record:
+        env.close_video_recorder();
     env.close();
 
 
