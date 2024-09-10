@@ -1,4 +1,10 @@
 __pycache__
 .DS_Store
-DQN_model.zip
+*.zip
 reinforcement_learning/
+
+rl-env-laptop
+rl-training-env
+
+logdir/
+__pycache__/
