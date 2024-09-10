@@ -22,7 +22,7 @@ class SnakeGame:
         self.fps = fps
         self.reset()
         self.current_direction = SnakeAction.MOVE_DOWN
-        if render_mode == "human":
+        if self.render_mode in ["human", "rgb_array"]:
             self._init_pygame()
 
     def _init_pygame(self):
@@ -136,7 +136,7 @@ class SnakeGame:
 
     def render(self):
      
-        if not self.render_mode == "human":
+        if self.render_mode not in ["human", "rgb_array"]:
             return
 
         self.window.fill((0, 0, 0))
@@ -164,6 +164,13 @@ class SnakeGame:
         pygame.event.pump()
         pygame.display.flip()
         self.clock.tick(self.fps)
+        
+        if self.render_mode == "rgb_array":
+            return self._get_rgb_array()
+
+    def _get_rgb_array(self):
+        """Capture the current screen as an RGB array."""
+        return pygame.surfarray.array3d(pygame.display.get_surface())
 
     def _process_events(self):
         for event in pygame.event.get():

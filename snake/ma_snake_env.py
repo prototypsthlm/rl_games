@@ -13,12 +13,6 @@ from stable_baselines3.common.evaluation import evaluate_policy
 
 init(autoreset=True)
 
-register(
-    id="ma_snake_env",
-    entry_point="ma_snake_env:SnakeGameEnv",
-)
-
-
 class SnakeGameEnv(gym.Env):
     # metadata is a required attribute
     # render_modes in our environment is either None or 'human'.
@@ -114,7 +108,7 @@ class SnakeGameEnv(gym.Env):
         return observation, reward, done, False, info
 
     def render(self):
-        self.game.render()
+        return self.game.render()
 
 
 def visualize_random():
@@ -141,75 +135,3 @@ def visualize_random():
             score += reward
         scores.append(score)
     print("Scores:", scores)
-
-
-def train_model(timesteps=250000, iters=1, replace=False):
-    print("Training model for ", timesteps, " timesteps over ", iters, " iterations.")
-    model_dir = "models/"
-    model_name = "dqn_ma_snake"
-    os.makedirs(model_dir, exist_ok=True)
-    env = gym.make("ma_snake_env")
-
-    model_path = f"{model_dir}{model_name}{timesteps*iters}"
-
-    if replace and os.path.exists(model_path + ".zip"):
-        print("Replacing existing model.")
-        os.remove(model_path + ".zip")
-
-    model = DQN(
-        "MlpPolicy",
-        env,
-        verbose=1,
-        tensorboard_log="tlogs/",
-        exploration_fraction=0.1,
-        exploration_final_eps=0.05,
-    )
-    i = 0
-    while i < iters:
-        i += 1
-        model.learn(
-            total_timesteps=timesteps, reset_num_timesteps=False, progress_bar=True
-        )
-        model.save(f"{model_dir}{model_name}{timesteps*i}")
-
-
-def test_model(model_name: str):
-    print(Fore.CYAN + "Testing model:", Fore.YELLOW + model_name)
-    env = gym.make("ma_snake_env", render_mode="human")
-
-    model = DQN.load(model_name, env=env)
-
-    obs = env.reset()[0]
-    done = False
-    score = 0
-    while True:
-        action, _ = model.predict(observation=obs, deterministic=True)
-        obs, reward, done, _, info = env.step(action)
-        score += reward
-        if done:
-            print(Fore.GREEN + "DONE")
-            print(Fore.MAGENTA + "Score:", Fore.YELLOW + str(score))
-            score = 0
-            env.reset()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train and test DQN model for Snake game."
-    )
-    parser.add_argument(
-        "--timesteps",
-        type=int,
-        default=250000,
-        help="Number of timesteps for training.",
-    )
-    parser.add_argument(
-        "--iters", type=int, default=1, help="Number of iterations for training."
-    )
-    parser.add_argument(
-        "-r", "--replace", action="store_true", help="Replace and overwrite the existing model."
-    )
-    args = parser.parse_args()
-
-    train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace)
-    test_model(f"models/dqn_ma_snake{args.timesteps * args.iters}")

@@ -5,7 +5,9 @@ rl_venv
 reinforcement_learning/
 rl-env-laptop
 rl-training-env
-
+rltest
 logdir/
 __pycache__/
 snake/models
+snake/tlogs
+snake/videos
