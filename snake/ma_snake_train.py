@@ -93,5 +93,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace)
+    train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace)
     test_model(f"models/dqn_ma_snake{args.timesteps * args.iters}", record=args.record)
