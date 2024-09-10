@@ -26,9 +26,17 @@ GREEN = (0, 255, 0)
 TARGET_FPS = 60
 TIME_STEP = 1.0 / TARGET_FPS
 SHIP_THRUST = 100  # The thrust power of the spaceship
-ROTATE_SPEED = 0.1  # Rotation speed for left/right turning
+ROTATE_SPEED = 0.05  # Rotation speed for left/right turning
 
-NUM_ASTEROIDS = 10
+ASTEROID_POSITIONS = [
+    (200, 350),
+    (200, 100),
+    (300, 500),
+    (500, 500),
+    (700, 200),
+    (600, 300),
+    (600, 450),
+]
 
 LANDING_ZONE_SIZE = 150
 
@@ -115,15 +123,9 @@ class AsteroidDodger(gym.Env, EzPickle):
             friction=0.1,
         )
 
-        for i in range(NUM_ASTEROIDS):
-            offset_to_border = 25
-            asteroid_body = self.world.CreateStaticBody(
-                position=(
-                    random.uniform(offset_to_border, SCREEN_WIDTH - offset_to_border),
-                    random.uniform(offset_to_border, SCREEN_HEIGHT - offset_to_border),
-                )
-            )
-            radius = random.randint(15, 40)
+        for pos in ASTEROID_POSITIONS:
+            asteroid_body = self.world.CreateStaticBody(position=pos)
+            radius = random.randint(35, 45)
             asteroid_body.CreateCircleFixture(
                 radius=radius,
                 density=1,
@@ -137,7 +139,7 @@ class AsteroidDodger(gym.Env, EzPickle):
         for body, _ in self.asteroids:
             self.world.DestroyBody(body)
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         super().reset()
         self._destroy()
 
@@ -196,8 +198,13 @@ class AsteroidDodger(gym.Env, EzPickle):
 
         reward = 0
 
-        reward -= 0.1 * abs(action[0])
-        reward -= 0.05 * abs(action[1])
+        for distance in distances:
+            if distance < 5:
+                reward -= 0.1
+                break
+
+        reward -= 0.3 * abs(action[0])
+        reward -= 0.025 * abs(action[1])
 
         if self.distance_to_landing_zone < LANDING_ZONE_SIZE / 2:
             self.terminate = True
@@ -220,7 +227,7 @@ class AsteroidDodger(gym.Env, EzPickle):
 
         if self.step_count > 2000:
             self.terminate = True
-            reward -= 50
+            reward -= 100
 
         self.state = [
             self.ship_body.position[0],
@@ -340,11 +347,14 @@ class AsteroidDodger(gym.Env, EzPickle):
         pygame.draw.rect(self.screen, GREEN, rect, 3)
 
     def render(self):
-        if self.screen is None and self.render_mode == "human":
+        if self.screen is None:
             pygame.init()
-            pygame.display.init()
-            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.display.set_caption("Spaceship in Asteroid Field")
+            if self.render_mode == "human":
+                pygame.display.init()
+                self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+                pygame.display.set_caption("Spaceship in Asteroid Field")
+            else:
+                self.screen = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         if self.clock is None:
             self.clock = pygame.time.Clock()
 
@@ -353,8 +363,6 @@ class AsteroidDodger(gym.Env, EzPickle):
                 self.terminate = False
                 self._destroy()
                 exit()
-
-        self.surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
 
         self.screen.fill(BLACK)
 
@@ -395,9 +403,11 @@ class AsteroidDodger(gym.Env, EzPickle):
         self.screen.blit(text_step, (0, 60))
         self.screen.blit(text_reward, (0, 80))
 
-        self.clock.tick(TARGET_FPS)
-
-        pygame.display.flip()
+        if self.render_mode == "human":
+            self.clock.tick(TARGET_FPS)
+            pygame.display.flip()
+        elif self.render_mode == "rgb_array":
+            return np.transpose(pygame.surfarray.array3d(self.screen), (1, 0, 2))
 
 
 def main():

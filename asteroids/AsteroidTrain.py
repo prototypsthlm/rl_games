@@ -13,7 +13,7 @@ import AsteroidEnv
 
 
 import gymnasium as gym
-from stable_baselines3 import DQN, A2C, DDPG
+from stable_baselines3 import DQN, A2C, DDPG, PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 
 
@@ -42,18 +42,30 @@ def visualize_random():
     env.close()
 
 
-def train_model_dqn():
-    env = make_env(continuous=False)
-    model = DQN(
+def train_model_ppo():
+    env = make_env(render_mode="rgb_array", continuous=False)
+
+    env = gym.wrappers.RecordVideo(
+        env=env,
+        video_folder="./videos",
+        name_prefix="test-video",
+        episode_trigger=lambda x: x % 50 == 0,
+    )
+    env.start_video_recorder()
+
+    model = PPO(
         "MlpPolicy",
         env,
         verbose=1,
         tensorboard_log="./logdir",
-        # exploration_fraction=0.5,
+        # exploration_fraction=0.05,
         # exploration_final_eps=0.05,
     )
 
-    model.learn(total_timesteps=1000000)
+    model.learn(total_timesteps=500000)
+
+    env.close_video_recorder()
+    del env
 
     env = make_env(render_mode="human", continuous=False)
 
@@ -62,42 +74,10 @@ def train_model_dqn():
     evaluate_policy(model, env, n_eval_episodes=3, render=True)
     env.close()
 
-    model.save("DQN_model")
-
-
-def train_model_a2c():
-    env = make_env()
-    model = A2C("MlpPolicy", env, verbose=1, tensorboard_log="./logdir")
-
-    model.learn(total_timesteps=500000)
-
-    input("Press Enter to continue...")
-
-    env = make_env(render_mode="human")
-
-    evaluate_policy(model, env, n_eval_episodes=3, render=True)
-    env.close()
-
-    model.save("A2C_model")
-
-
-def train_model_ddpg():
-    env = make_env()
-    model = DDPG("MlpPolicy", env, verbose=1, tensorboard_log="./logdir")
-
-    model.learn(total_timesteps=150000)
-
-    input("Press Enter to continue...")
-
-    env = make_env(render_mode="human")
-
-    evaluate_policy(model, env, n_eval_episodes=3, render=True)
-    env.close()
-
-    model.save("DDPG_model")
+    model.save("PPO_model")
 
 
 # visualize_random()
 # train_model_a2c()
-# train_model_ddpg()
-train_model_dqn()
+train_model_ppo()
+# train_model_dqn()
