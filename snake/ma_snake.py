@@ -135,6 +135,7 @@ class SnakeGame:
         return False, False
 
     def render(self):
+     
         if not self.render_mode == "human":
             return
 
@@ -160,6 +161,7 @@ class SnakeGame:
                 self.cell_height,
             ),
         )
+        pygame.event.pump()
         pygame.display.flip()
         self.clock.tick(self.fps)
 

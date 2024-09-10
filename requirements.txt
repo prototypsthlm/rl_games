@@ -1,4 +1,6 @@
+stable_baselines3
 gymnasium[all]
 numpy
-stable_baselines3
+stable-baselines3[extra]
+colorama
 tensorboard
