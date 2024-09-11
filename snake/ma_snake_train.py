@@ -12,12 +12,18 @@ register(
     entry_point="ma_snake_env:SnakeGameEnv",
 )
 
-def train_model(timesteps=250000, iters=1, replace=False, algo=DQN, algo_name="DQN"):
+
+def train_model(
+    timesteps=250000, iters=1, replace=False, record=False, algo=DQN, algo_name="DQN"
+):
     print("Training model for ", timesteps, " timesteps over ", iters, " iterations.")
     model_dir = "models/"
     model_name = algo_name + "_ma_snake"
     os.makedirs(model_dir, exist_ok=True)
-    env = gym.make("ma_snake_env")
+
+    render_mode = "rgb_array" if record else None
+    env = gym.make("ma_snake_env", render_mode=render_mode)
+    env.reset()
 
     model_path = f"{model_dir}{model_name}{timesteps*iters}"
 
@@ -25,13 +31,19 @@ def train_model(timesteps=250000, iters=1, replace=False, algo=DQN, algo_name="D
         print("Replacing existing model.")
         os.remove(model_path + ".zip")
 
+    if record:
+        env = RecordVideo(
+            env, video_folder="videos", episode_trigger=lambda x: x % 250 == 0
+        )
+        env.start_video_recorder()
+
     model = algo(
         "MlpPolicy",
         env,
         verbose=1,
         tensorboard_log="tlogs/",
-        # exploration_fraction=0.1,
-        # exploration_final_eps=0.05,
+        exploration_fraction=0.1,
+        exploration_final_eps=0.05,
     )
     i = 0
     while i < iters:
@@ -40,6 +52,9 @@ def train_model(timesteps=250000, iters=1, replace=False, algo=DQN, algo_name="D
             total_timesteps=timesteps, reset_num_timesteps=False, progress_bar=True
         )
         model.save(f"{model_dir}{model_name}{timesteps*i}")
+
+    if record:
+        env.close_video_recorder()
 
 
 def test_model(model_name: str, record: bool, algo=DQN):
@@ -55,8 +70,8 @@ def test_model(model_name: str, record: bool, algo=DQN):
     obs = env.reset()[0]
     done = False
     score = 0
-    if record: 
-        env.start_video_recorder();
+    if record:
+        env.start_video_recorder()
     episodes = 0
     while episodes < 10:
         action, _ = model.predict(observation=obs, deterministic=True)
@@ -68,10 +83,10 @@ def test_model(model_name: str, record: bool, algo=DQN):
             score = 0
             episodes += 1
             env.reset()
-            
+
     if record:
-        env.close_video_recorder();
-    env.close();
+        env.close_video_recorder()
+    env.close()
 
 
 if __name__ == "__main__":
@@ -88,14 +103,22 @@ if __name__ == "__main__":
         "--iters", type=int, default=1, help="Number of iterations for training."
     )
     parser.add_argument(
-        "-r", "--replace", action="store_true", help="Replace and overwrite the existing model."
+        "-r",
+        "--replace",
+        action="store_true",
+        help="Replace and overwrite the existing model.",
     )
     parser.add_argument(
-        "--record", action="store_true", help="Record the video output of the game."
+        "--record",
+        action="store_true",
+        help="Record the result of the video output of the game.",
     )
     parser.add_argument(
-        "--rl-algo", default="DQN", help="What RL algorithm to use."
+        "--record-train",
+        action="store_true",
+        help="Record the training of the video output of the game.",
     )
+    parser.add_argument("--rl-algo", default="DQN", help="What RL algorithm to use.")
     args = parser.parse_args()
 
     if args.rl_algo == "DQN":
@@ -109,8 +132,23 @@ if __name__ == "__main__":
     elif args.rl_algo == "A2C":
         rl_algo = A2C
     else:
-        print(Fore.RED + args.rl_algo, "is not a valid RL algorithm. Pick one of DQN, PPO, SAC, TD3, A2C.")
+        print(
+            Fore.RED + args.rl_algo,
+            "is not a valid RL algorithm. Pick one of DQN, PPO, SAC, TD3, A2C.",
+        )
         exit(0)
 
-    train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace, algo=rl_algo, algo_name=args.rl_algo)
-    test_model(f"models/{args.rl_algo}_ma_snake{args.timesteps * args.iters}", record=args.record, algo=rl_algo)
+    train_model(
+        timesteps=args.timesteps,
+        iters=args.iters,
+        replace=args.replace,
+        algo=rl_algo,
+        algo_name=args.rl_algo,
+        record=args.record_train,
+    )
+    input("Press Enter to test the model...")
+    test_model(
+        f"models/{args.rl_algo}_ma_snake{args.timesteps * args.iters}",
+        record=args.record,
+        algo=rl_algo,
+    )

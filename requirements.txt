@@ -1,4 +1,5 @@
 stable_baselines3
+moviepy
 gymnasium[all]
 numpy
 stable-baselines3[extra]

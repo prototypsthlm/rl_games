@@ -28,18 +28,23 @@ class SnakeGame:
         print("Render mode: ", self.render_mode)
         print("Initializing Pygame")
         pygame.init()
-        pygame.display.init()
-
-        # Clock
-        self.clock = pygame.time.Clock()
 
         # Rendering
         self.cell_height = 16
         self.cell_width = 16
 
-        self.window = pygame.display.set_mode(
-            (self.grid_cols * self.cell_width, self.grid_rows * self.cell_height)
-        )
+        if self.render_mode == "human":
+            pygame.display.init()
+            self.window = pygame.display.set_mode(
+                (self.grid_cols * self.cell_width, self.grid_rows * self.cell_height)
+            )
+        elif self.render_mode == "rgb_array":
+            self.window = pygame.Surface(
+                (self.grid_cols * self.cell_width, self.grid_rows * self.cell_height)
+            )
+
+        # Clock
+        self.clock = pygame.time.Clock()
 
     def reset(self, seed=None):
         self.snake_body = [[5, 5]]
@@ -105,8 +110,8 @@ class SnakeGame:
         return True
 
     def perform_action(self, action) -> tuple[bool, bool]:
-        # if not self._is_valid_action(action):
-        #     return False, False
+        if not self._is_valid_action(action):
+            return False, False
 
         if action == SnakeAction.MOVE_UP:
             new_head = [self.snake_body[0][0] - 1, self.snake_body[0][1]]
@@ -135,7 +140,7 @@ class SnakeGame:
         return False, False
 
     def render(self):
-     
+
         if self.render_mode not in ["human", "rgb_array"]:
             return
 
@@ -162,15 +167,16 @@ class SnakeGame:
             ),
         )
         pygame.event.pump()
-        pygame.display.flip()
+        if self.render_mode == "human":
+            pygame.display.flip()
         self.clock.tick(self.fps)
-        
+
         if self.render_mode == "rgb_array":
             return self._get_rgb_array()
 
     def _get_rgb_array(self):
         """Capture the current screen as an RGB array."""
-        return pygame.surfarray.array3d(pygame.display.get_surface())
+        return pygame.surfarray.array3d(self.window)
 
     def _process_events(self):
         for event in pygame.event.get():
@@ -202,6 +208,8 @@ def main():
 
     while running:
         running = not game._process_events()
+        print(game._get_obs())
+        input("Press Enter to continue...")
         game.perform_action(game.current_direction)
         game.render()
 

@@ -13,6 +13,7 @@ from stable_baselines3.common.evaluation import evaluate_policy
 
 init(autoreset=True)
 
+
 class SnakeGameEnv(gym.Env):
     # metadata is a required attribute
     # render_modes in our environment is either None or 'human'.
@@ -23,6 +24,7 @@ class SnakeGameEnv(gym.Env):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
+        self.total_steps = 0
         self.game = snake.SnakeGame(
             grid_rows=grid_rows, grid_cols=grid_cols, fps=16, render_mode=render_mode
         )
@@ -31,33 +33,54 @@ class SnakeGameEnv(gym.Env):
 
         max_snake_length = self.grid_rows * self.grid_cols
 
-        high = np.array(
-            [self.grid_rows - 1, self.grid_cols - 1] * max_snake_length
-            + [self.grid_rows - 1, self.grid_cols - 1]
-        )
-
         self.observation_space = spaces.Box(
             low=0,
-            high=high,
-            shape=(2 * max_snake_length + 2,),
+            high=max(self.grid_rows, self.grid_cols),
+            shape=(7,),
             dtype=np.int32,
         )
 
     def _get_obs(self):
         snake_body = self.game.snake_body
+        snake_head_position = snake_body[0]
         target_position = self.game.target_position
 
-        flattened_snake_body = [coord for segment in snake_body for coord in segment]
-        obs = flattened_snake_body
+        dirs_to_check = []
+        curr_dir = self.game.current_direction
+        if curr_dir == snake.SnakeAction.MOVE_UP:
+            dirs_to_check = [[-1, 0], [0, -1], [0, 1]]
+        elif curr_dir == snake.SnakeAction.MOVE_DOWN:
+            dirs_to_check = [[1, 0], [0, -1], [0, 1]]
+        elif curr_dir == snake.SnakeAction.MOVE_LEFT:
+            dirs_to_check = [[0, -1], [-1, 0], [1, 0]]
+        elif curr_dir == snake.SnakeAction.MOVE_RIGHT:
+            dirs_to_check = [[0, 1], [-1, 0], [1, 0]]
 
-        # Pad the observation with zeros if necessary
-        max_length = 2 * self.grid_rows * self.grid_cols
-        obs = obs + [0] * (max_length - len(obs))
+        def pos_plus_movement(pos, movement):
+            return [pos[0] + movement[0], pos[1] + movement[1]]
 
-        # Add target_position at the end
-        obs = obs + list(target_position)
+        def is_coord_free(coord):
+            is_free = (
+                coord not in snake_body
+                and coord[0] >= 0
+                and coord[0] < self.grid_rows
+                and coord[1] >= 0
+                and coord[1] < self.grid_cols
+            )
+            return max(self.grid_rows, self.grid_cols) if is_free else 0
 
-        return np.array(obs, dtype=np.int32)
+        return np.array(
+            [
+                snake_head_position[0],
+                snake_head_position[1],
+                target_position[0],
+                target_position[1],
+                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[0])),
+                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[1])),
+                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[2])),
+            ],
+            dtype=np.int32,
+        )
 
     def _get_info(self):
         return {
@@ -71,6 +94,8 @@ class SnakeGameEnv(gym.Env):
         super().reset(seed=seed)
         self.game.reset(seed=seed)
 
+        self.total_steps = 0
+
         observation = self._get_obs()
         info = self._get_info()
 
@@ -80,26 +105,31 @@ class SnakeGameEnv(gym.Env):
         return observation, info
 
     def step(self, action):
-        prev_distance = self._get_info()["snake_to_target_distance"]
-        collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
+        info = self._get_info()
+        prev_distance = info["snake_to_target_distance"]
+        new_distance = info["snake_to_target_distance"]
+
         reward = -0.1
-        new_distance = self._get_info()["snake_to_target_distance"]
         done = False
+        self.total_steps += 1
+        collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
 
         if new_distance >= prev_distance:
-            reward = -0.3
+            reward = -1
 
         if new_distance < prev_distance:
-            reward = 0.1
+            reward = 5
 
         if target_reached:
-            reward = 1
+            reward = 15
 
         if collided:
-            reward = -1
+            reward = -50
             done = True
 
-        info = self._get_info()
+        if self.total_steps >= 1000:
+            done = True
+
         observation = self._get_obs()
 
         if self.render_mode == "human":
@@ -112,10 +142,7 @@ class SnakeGameEnv(gym.Env):
 
 
 def visualize_random():
-    env = gym.make("ma_snake_env", render_mode="human")
-    print("Checking environment")
-    check_env(env.unwrapped)
-    print("Environment checked")
+    env = SnakeGameEnv(grid_rows=30, grid_cols=30, render_mode="human")
     episodes = 5
     scores = []
     for episode in range(episodes):
@@ -135,3 +162,7 @@ def visualize_random():
             score += reward
         scores.append(score)
     print("Scores:", scores)
+
+
+if __name__ == "__main__":
+    visualize_random()
