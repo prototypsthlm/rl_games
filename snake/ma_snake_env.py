@@ -122,7 +122,7 @@ class SnakeGameEnv(gym.Env):
             reward = 1
 
         if target_reached:
-            reward = 50
+            reward = 75
 
         if collided:
             reward = -100
