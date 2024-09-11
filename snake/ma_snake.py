@@ -57,9 +57,9 @@ class SnakeGame:
         ]
     
     def reset(self, seed=None):
+        random.seed(seed)
         self._set_random_snake_positions()
         self._set_random_target_position()
-        random.seed(seed)
 
     def _check_collision(self, snake):
         if (

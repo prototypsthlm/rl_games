@@ -1,8 +1,10 @@
-import gym
+import gymnasium as gym
+from gymnasium import spaces
 
 ## Source: https://github.com/koulanurag/ma-gym
 
-class MultiAgentActionSpace(list):
+class MultiAgentActionSpace(spaces.Space):
+    """ MultiAgentActionSpace """
     def __init__(self, agents_action_space):
         for x in agents_action_space:
             assert isinstance(x, gym.spaces.space.Space)
@@ -15,7 +17,7 @@ class MultiAgentActionSpace(list):
         return [agent_action_space.sample() for agent_action_space in self._agents_action_space]
     
 
-class MultiAgentObservationSpace(list):
+class MultiAgentObservationSpace(spaces.Space):
     def __init__(self, agents_observation_space):
         for x in agents_observation_space:
             assert isinstance(x, gym.spaces.space.Space)
