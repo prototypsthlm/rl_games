@@ -11,3 +11,6 @@ __pycache__/
 snake/models
 snake/tlogs
 snake/videos
+
+*.mp4
+*meta.json

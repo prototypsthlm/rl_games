@@ -42,8 +42,9 @@ def train_model(
         env,
         verbose=1,
         tensorboard_log="tlogs/",
-        exploration_fraction=0.1,
-        exploration_final_eps=0.05,
+        exploration_initial_eps=1.5,
+        exploration_fraction=0.01,
+        exploration_final_eps=0.1,
     )
     i = 0
     while i < iters:

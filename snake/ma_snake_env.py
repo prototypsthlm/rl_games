@@ -36,7 +36,7 @@ class SnakeGameEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=max(self.grid_rows, self.grid_cols),
-            shape=(7,),
+            shape=(8,),
             dtype=np.int32,
         )
 
@@ -47,13 +47,13 @@ class SnakeGameEnv(gym.Env):
 
         dirs_to_check = []
         curr_dir = self.game.current_direction
-        if curr_dir == snake.SnakeAction.MOVE_UP:
+        if curr_dir == snake.SnakeDirection.UP:
             dirs_to_check = [[-1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeAction.MOVE_DOWN:
+        elif curr_dir == snake.SnakeDirection.DOWN:
             dirs_to_check = [[1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeAction.MOVE_LEFT:
+        elif curr_dir == snake.SnakeDirection.LEFT:
             dirs_to_check = [[0, -1], [-1, 0], [1, 0]]
-        elif curr_dir == snake.SnakeAction.MOVE_RIGHT:
+        elif curr_dir == snake.SnakeDirection.RIGHT:
             dirs_to_check = [[0, 1], [-1, 0], [1, 0]]
 
         def pos_plus_movement(pos, movement):
@@ -75,6 +75,7 @@ class SnakeGameEnv(gym.Env):
                 snake_head_position[1],
                 target_position[0],
                 target_position[1],
+                curr_dir,
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[0])),
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[1])),
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[2])),
@@ -109,22 +110,22 @@ class SnakeGameEnv(gym.Env):
         prev_distance = info["snake_to_target_distance"]
         new_distance = info["snake_to_target_distance"]
 
-        reward = -0.1
+        reward = 0
         done = False
         self.total_steps += 1
         collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
 
         if new_distance >= prev_distance:
-            reward = -1
+            reward = -0.5
 
         if new_distance < prev_distance:
-            reward = 5
+            reward = 0.25
 
         if target_reached:
-            reward = 15
+            reward = 75
 
         if collided:
-            reward = -50
+            reward = -100
             done = True
 
         if self.total_steps >= 1000:

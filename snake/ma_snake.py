@@ -1,15 +1,21 @@
 import random
 import sys
-from enum import Enum
+from enum import IntEnum, Enum
 
 import pygame
 
 
 class SnakeAction(Enum):
-    MOVE_UP = 0
-    MOVE_DOWN = 1
-    MOVE_LEFT = 2
-    MOVE_RIGHT = 3
+    NOTHING = 0
+    RIGHT = 1
+    LEFT = 2
+
+
+class SnakeDirection(IntEnum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
 
 
 class SnakeGame:
@@ -17,10 +23,10 @@ class SnakeGame:
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
-        self.snake_body = [[5, 5]]
+        self.snake_body = [[int(grid_rows / 2), int(grid_cols / 2)]]
         self.fps = fps
         self.reset()
-        self.current_direction = SnakeAction.MOVE_DOWN
+        self.current_direction = SnakeDirection.DOWN
         if self.render_mode in ["human", "rgb_array"]:
             self._init_pygame()
 
@@ -47,7 +53,7 @@ class SnakeGame:
         self.clock = pygame.time.Clock()
 
     def reset(self, seed=None):
-        self.snake_body = [[5, 5]]
+        self.snake_body = [[int(self.grid_rows / 2), int(self.grid_cols / 2)]]
         random.seed(seed)
         self.target_position = [
             random.randint(1, self.grid_rows - 1),
@@ -86,55 +92,71 @@ class SnakeGame:
             self.snake_body.pop()
         return collided, found_target
 
-    def _is_valid_action(self, action):
-        if (
-            action == SnakeAction.MOVE_UP
-            and self.current_direction == SnakeAction.MOVE_DOWN
-        ):
-            return False
-        if (
-            action == SnakeAction.MOVE_DOWN
-            and self.current_direction == SnakeAction.MOVE_UP
-        ):
-            return False
-        if (
-            action == SnakeAction.MOVE_LEFT
-            and self.current_direction == SnakeAction.MOVE_RIGHT
-        ):
-            return False
-        if (
-            action == SnakeAction.MOVE_RIGHT
-            and self.current_direction == SnakeAction.MOVE_LEFT
-        ):
-            return False
-        return True
-
     def perform_action(self, action) -> tuple[bool, bool]:
-        if not self._is_valid_action(action):
-            return False, False
+        if action == SnakeAction.NOTHING:
+            next_head_position_dir = [0, 0]
+            if self.current_direction == SnakeDirection.UP:
+                next_head_position_dir = [-1, 0]
+            elif self.current_direction == SnakeDirection.DOWN:
+                next_head_position_dir = [1, 0]
+            elif self.current_direction == SnakeDirection.LEFT:
+                next_head_position_dir = [0, -1]
+            elif self.current_direction == SnakeDirection.RIGHT:
+                next_head_position_dir = [0, 1]
 
-        if action == SnakeAction.MOVE_UP:
-            new_head = [self.snake_body[0][0] - 1, self.snake_body[0][1]]
+            new_head = [
+                self.snake_body[0][0] + next_head_position_dir[0],
+                self.snake_body[0][1] + next_head_position_dir[1],
+            ]
             collided, found_target = self._move_snake(new_head)
-            self.current_direction = SnakeAction.MOVE_UP
             return collided, found_target
 
-        elif action == SnakeAction.MOVE_DOWN:
-            new_head = [self.snake_body[0][0] + 1, self.snake_body[0][1]]
+        elif action == SnakeAction.LEFT:
+            next_head_position_dir = [0, 0]
+            new_direction = SnakeDirection.UP
+            if self.current_direction == SnakeDirection.UP:
+                new_direction = SnakeDirection.LEFT
+                next_head_position_dir = [0, -1]
+            elif self.current_direction == SnakeDirection.DOWN:
+                new_direction = SnakeDirection.RIGHT
+                next_head_position_dir = [0, 1]
+            elif self.current_direction == SnakeDirection.LEFT:
+                new_direction = SnakeDirection.DOWN
+                next_head_position_dir = [1, 0]
+            elif self.current_direction == SnakeDirection.RIGHT:
+                new_direction = SnakeDirection.UP
+                next_head_position_dir = [-1, 0]
+
+            new_head = [
+                self.snake_body[0][0] + next_head_position_dir[0],
+                self.snake_body[0][1] + next_head_position_dir[1],
+            ]
             collided, found_target = self._move_snake(new_head)
-            self.current_direction = SnakeAction.MOVE_DOWN
+            self.current_direction = new_direction
             return collided, found_target
 
-        elif action == SnakeAction.MOVE_LEFT:
-            new_head = [self.snake_body[0][0], self.snake_body[0][1] - 1]
-            collided, found_target = self._move_snake(new_head)
-            self.current_direction = SnakeAction.MOVE_LEFT
-            return collided, found_target
+        elif action == SnakeAction.RIGHT:
+            next_head_position_dir = [0, 0]
+            new_direction = SnakeDirection.UP
+            if self.current_direction == SnakeDirection.UP:
+                new_direction = SnakeDirection.RIGHT
+                next_head_position_dir = [0, 1]
+            elif self.current_direction == SnakeDirection.DOWN:
+                new_direction = SnakeDirection.LEFT
+                next_head_position_dir = [0, -1]
+            elif self.current_direction == SnakeDirection.LEFT:
+                new_direction = SnakeDirection.UP
+                next_head_position_dir = [-1, 0]
+            elif self.current_direction == SnakeDirection.RIGHT:
+                new_direction = SnakeDirection.DOWN
+                next_head_position_dir = [1, 0]
 
-        elif action == SnakeAction.MOVE_RIGHT:
-            new_head = [self.snake_body[0][0], self.snake_body[0][1] + 1]
+            new_head = [
+                self.snake_body[0][0] + next_head_position_dir[0],
+                self.snake_body[0][1] + next_head_position_dir[1],
+            ]
             collided, found_target = self._move_snake(new_head)
-            self.current_direction = SnakeAction.MOVE_RIGHT
+            self.current_direction = new_direction
             return collided, found_target
 
         return False, False
@@ -179,27 +201,21 @@ class SnakeGame:
         return pygame.surfarray.array3d(self.window)
 
     def _process_events(self):
+        action = SnakeAction.NOTHING
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return True
+                return False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    if self.current_direction != SnakeAction.MOVE_DOWN:
-                        self.current_direction = SnakeAction.MOVE_UP
-                elif event.key == pygame.K_DOWN:
-                    if self.current_direction != SnakeAction.MOVE_UP:
-                        self.current_direction = SnakeAction.MOVE_DOWN
-                elif event.key == pygame.K_LEFT:
-                    if self.current_direction != SnakeAction.MOVE_RIGHT:
-                        self.current_direction = SnakeAction.MOVE_LEFT
+                if event.key == pygame.K_LEFT:
+                    action = SnakeAction.LEFT
                 elif event.key == pygame.K_RIGHT:
-                    if self.current_direction != SnakeAction.MOVE_LEFT:
-                        self.current_direction = SnakeAction.MOVE_RIGHT
+                    action = SnakeAction.RIGHT
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
-        return False
+        return True, action
 
 
 def main():
@@ -207,10 +223,9 @@ def main():
     running = True
 
     while running:
-        running = not game._process_events()
-        print(game._get_obs())
-        input("Press Enter to continue...")
-        game.perform_action(game.current_direction)
+        running, action = game._process_events()
+        # input("Press Enter to continue...")
+        game.perform_action(action)
         game.render()
 
 
