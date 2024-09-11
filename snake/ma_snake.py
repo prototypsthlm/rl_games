@@ -13,7 +13,6 @@ class SnakeAction(Enum):
 
 
 class SnakeGame:
-
     def __init__(self, grid_rows=30, grid_cols=30, fps=60, render_mode=None):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
@@ -28,6 +27,7 @@ class SnakeGame:
     def _init_pygame(self):
         print("Render mode: ", self.render_mode)
         print("Initializing Pygame")
+        pygame.init()
         pygame.display.init()
 
         # Clock
@@ -197,7 +197,7 @@ class SnakeGame:
 
 
 def main():
-    game = SnakeGame(grid_rows=30, grid_cols=30, fps=16)
+    game = SnakeGame(grid_rows=30, grid_cols=30, fps=16, render_mode="human")
     running = True
 
     while running:

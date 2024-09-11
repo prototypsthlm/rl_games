@@ -3,7 +3,7 @@ import os
 
 import gymnasium as gym
 from colorama import Fore
-from stable_baselines3 import DQN
+from stable_baselines3 import DQN, PPO, SAC, TD3, A2C
 from gymnasium.envs.registration import register
 from gymnasium.wrappers import RecordVideo
 
@@ -12,10 +12,10 @@ register(
     entry_point="ma_snake_env:SnakeGameEnv",
 )
 
-def train_model(timesteps=250000, iters=1, replace=False):
+def train_model(timesteps=250000, iters=1, replace=False, algo=DQN, algo_name="DQN"):
     print("Training model for ", timesteps, " timesteps over ", iters, " iterations.")
     model_dir = "models/"
-    model_name = "dqn_ma_snake"
+    model_name = algo_name + "_ma_snake"
     os.makedirs(model_dir, exist_ok=True)
     env = gym.make("ma_snake_env")
 
@@ -25,13 +25,13 @@ def train_model(timesteps=250000, iters=1, replace=False):
         print("Replacing existing model.")
         os.remove(model_path + ".zip")
 
-    model = DQN(
+    model = algo(
         "MlpPolicy",
         env,
         verbose=1,
         tensorboard_log="tlogs/",
-        exploration_fraction=0.1,
-        exploration_final_eps=0.05,
+        # exploration_fraction=0.1,
+        # exploration_final_eps=0.05,
     )
     i = 0
     while i < iters:
@@ -42,7 +42,7 @@ def train_model(timesteps=250000, iters=1, replace=False):
         model.save(f"{model_dir}{model_name}{timesteps*i}")
 
 
-def test_model(model_name: str, record: bool):
+def test_model(model_name: str, record: bool, algo=DQN):
     print(Fore.CYAN + "Testing model:", Fore.YELLOW + model_name)
     render_mode = "rgb_array" if record else "human"
     env = gym.make("ma_snake_env", render_mode=render_mode)
@@ -50,7 +50,7 @@ def test_model(model_name: str, record: bool):
     if record:
         env = RecordVideo(env, video_folder="videos", episode_trigger=lambda x: True)
 
-    model = DQN.load(model_name, env=env)
+    model = algo.load(model_name, env=env)
 
     obs = env.reset()[0]
     done = False
@@ -93,7 +93,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "--record", action="store_true", help="Record the video output of the game."
     )
+    parser.add_argument(
+        "--rl-algo", default="DQN", help="What RL algorithm to use."
+    )
     args = parser.parse_args()
 
-    train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace)
-    test_model(f"models/dqn_ma_snake{args.timesteps * args.iters}", record=args.record)
+    if args.rl_algo == "DQN":
+        rl_algo = DQN
+    elif args.rl_algo == "PPO":
+        rl_algo = PPO
+    elif args.rl_algo == "SAC":
+        rl_algo = SAC
+    elif args.rl_algo == "TD3":
+        rl_algo = TD3
+    elif args.rl_algo == "A2C":
+        rl_algo = A2C
+    else:
+        print(Fore.RED + args.rl_algo, "is not a valid RL algorithm. Pick one of DQN, PPO, SAC, TD3, A2C.")
+        exit(0)
+
+    train_model(timesteps=args.timesteps, iters=args.iters, replace=args.replace, algo=rl_algo, algo_name=args.rl_algo)
+    test_model(f"models/{args.rl_algo}_ma_snake{args.timesteps * args.iters}", record=args.record, algo=rl_algo)
