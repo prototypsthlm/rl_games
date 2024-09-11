@@ -36,7 +36,7 @@ class SnakeGameEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=max(self.grid_rows, self.grid_cols),
-            shape=(8,),
+            shape=(7,),
             dtype=np.int32,
         )
 
@@ -75,7 +75,6 @@ class SnakeGameEnv(gym.Env):
                 snake_head_position[1],
                 target_position[0],
                 target_position[1],
-                curr_dir,
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[0])),
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[1])),
                 is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[2])),
@@ -106,23 +105,24 @@ class SnakeGameEnv(gym.Env):
         return observation, info
 
     def step(self, action):
-        info = self._get_info()
-        prev_distance = info["snake_to_target_distance"]
-        new_distance = info["snake_to_target_distance"]
+        info_before = self._get_info()
+        prev_distance = info_before["snake_to_target_distance"]
+        collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
+        info_after = self._get_info()
+        new_distance = info_after["snake_to_target_distance"]
 
         reward = 0
         done = False
         self.total_steps += 1
-        collided, target_reached = self.game.perform_action(snake.SnakeAction(action))
 
         if new_distance >= prev_distance:
-            reward = -0.5
+            reward = 1 / new_distance * -10
 
         if new_distance < prev_distance:
-            reward = 0.25
+            reward = 1 / new_distance * 100
 
         if target_reached:
-            reward = 75
+            reward = 50
 
         if collided:
             reward = -100
@@ -136,7 +136,7 @@ class SnakeGameEnv(gym.Env):
         if self.render_mode == "human":
             self.render()
 
-        return observation, reward, done, False, info
+        return observation, reward, done, False, info_after
 
     def render(self):
         return self.game.render()

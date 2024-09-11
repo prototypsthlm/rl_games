@@ -42,9 +42,9 @@ def train_model(
         env,
         verbose=1,
         tensorboard_log="tlogs/",
-        exploration_initial_eps=1.5,
-        exploration_fraction=0.01,
-        exploration_final_eps=0.1,
+        # exploration_initial_eps=1.5,
+        # exploration_fraction=0.01,
+        # exploration_final_eps=0.1,
     )
     i = 0
     while i < iters:
@@ -119,6 +119,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Record the training of the video output of the game.",
     )
+    parser.add_argument(
+        "--model",
+        help="Use a already trained model to test the game.",
+    )
     parser.add_argument("--rl-algo", default="DQN", help="What RL algorithm to use.")
     args = parser.parse_args()
 
@@ -139,17 +143,22 @@ if __name__ == "__main__":
         )
         exit(0)
 
-    train_model(
-        timesteps=args.timesteps,
-        iters=args.iters,
-        replace=args.replace,
-        algo=rl_algo,
-        algo_name=args.rl_algo,
-        record=args.record_train,
-    )
-    input("Press Enter to test the model...")
+    if not args.model:
+        train_model(
+            timesteps=args.timesteps,
+            iters=args.iters,
+            replace=args.replace,
+            algo=rl_algo,
+            algo_name=args.rl_algo,
+            record=args.record_train,
+        )
+        input("Press Enter to test the model...")
+        model_file_dir = f"models/{args.rl_algo}_ma_snake{args.timesteps * args.iters}"
+    else:
+        model_file_dir = args.model.replace("./", "")
+
     test_model(
-        f"models/{args.rl_algo}_ma_snake{args.timesteps * args.iters}",
+        model_file_dir,
         record=args.record,
         algo=rl_algo,
     )

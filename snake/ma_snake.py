@@ -23,7 +23,7 @@ class SnakeGame:
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
-        self.snake_body = [[int(grid_rows / 2), int(grid_cols / 2)]]
+        self.snake_body = [[4, 4]]
         self.fps = fps
         self.reset()
         self.current_direction = SnakeDirection.DOWN
@@ -53,7 +53,7 @@ class SnakeGame:
         self.clock = pygame.time.Clock()
 
     def reset(self, seed=None):
-        self.snake_body = [[int(self.grid_rows / 2), int(self.grid_cols / 2)]]
+        self.snake_body = [[4, 4]]
         random.seed(seed)
         self.target_position = [
             random.randint(1, self.grid_rows - 1),
