@@ -29,7 +29,7 @@ class SnakeGameEnv(gym.Env):
             grid_rows=grid_rows, grid_cols=grid_cols, fps=16, render_mode=render_mode
         )
 
-        self.action_space = spaces.Discrete(len(snake.SnakeAction))
+        self.action_space = spaces.Discrete(4)
 
         max_snake_length = self.grid_rows * self.grid_cols
 
@@ -47,13 +47,13 @@ class SnakeGameEnv(gym.Env):
 
         dirs_to_check = []
         curr_dir = self.game.current_direction
-        if curr_dir == snake.SnakeDirection.UP:
+        if curr_dir == snake.SnakeAction.UP:
             dirs_to_check = [[-1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeDirection.DOWN:
+        elif curr_dir == snake.SnakeAction.DOWN:
             dirs_to_check = [[1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeDirection.LEFT:
+        elif curr_dir == snake.SnakeAction.LEFT:
             dirs_to_check = [[0, -1], [-1, 0], [1, 0]]
-        elif curr_dir == snake.SnakeDirection.RIGHT:
+        elif curr_dir == snake.SnakeAction.RIGHT:
             dirs_to_check = [[0, 1], [-1, 0], [1, 0]]
 
         def pos_plus_movement(pos, movement):
@@ -115,11 +115,11 @@ class SnakeGameEnv(gym.Env):
         done = False
         self.total_steps += 1
 
-        if new_distance >= prev_distance:
-            reward = 1 / new_distance * -10
+        if new_distance > prev_distance:
+            reward = -1
 
-        if new_distance < prev_distance:
-            reward = 1 / new_distance * 100
+        if new_distance <= prev_distance:
+            reward = 1
 
         if target_reached:
             reward = 50
