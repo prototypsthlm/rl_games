@@ -32,9 +32,9 @@ class parallel_env(ParallelEnv):
     # metadata is a required attribute
     # render_modes in our environment is either None or 'human'.
     # render_fps is not used in our env, but we are require to declare a non-zero value.
-    metadata = {"name": "ma_snake_v0", "render_modes": ["human"], "render_fps": 4}
+    metadata = {"name": "ma_snake_v0", "render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, grid_rows=30, grid_cols=30, render_mode=None):
+    def __init__(self, grid_rows=32, grid_cols=32, render_mode=None):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
