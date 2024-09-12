@@ -25,6 +25,7 @@ class SnakeGame:
         self.fps = fps
         self.frame = 0
         self.reset()
+        self.dead_snakes = []
         self.snake_directions = [SnakeAction.DOWN for _ in range(n_players)]
         if self.render_mode in ["human", "rgb_array"]:
             self._init_pygame()

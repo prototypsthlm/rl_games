@@ -4,11 +4,10 @@ import glob
 import os
 import time
 
+import ma_snake_env as snake
 import supersuit as ss
 from stable_baselines3 import PPO
 from stable_baselines3.ppo import MlpPolicy
-
-import ma_snake_env as snake
 
 
 def train_butterfly_supersuit(
@@ -98,5 +97,5 @@ if __name__ == "__main__":
     env_kwargs = {}
 
     # Train a model (takes ~3 minutes on GPU)
-    train_butterfly_supersuit(env_fn, steps=500000, seed=None, **env_kwargs)
+    # train_butterfly_supersuit(env_fn, steps=5000000, seed=None, **env_kwargs)
     eval(env_fn, num_games=10, render_mode="human", **env_kwargs)

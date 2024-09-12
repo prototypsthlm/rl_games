@@ -33,22 +33,27 @@ class parallel_env(ParallelEnv):
     # render_fps is not used in our env, but we are require to declare a non-zero value.
     metadata = {"name": "ma_snake_v0", "render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, grid_rows=32, grid_cols=32, render_mode=None):
+    def __init__(self, grid_rows=64, grid_cols=64, render_mode=None):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
+        self.n_players = 4
         self.game = snake.SnakeGame(
-            grid_rows=grid_rows, grid_cols=grid_cols, fps=30, render_mode=render_mode
+            grid_rows=grid_rows,
+            grid_cols=grid_cols,
+            fps=30,
+            render_mode=render_mode,
+            n_players=self.n_players,
         )
 
-        self.possible_agents = ["player_" + str(r) for r in range(2)]
+        self.possible_agents = ["player_" + str(r) for r in range(self.n_players)]
 
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         obs_space = spaces.Box(
             low=0,
             high=max(self.grid_rows, self.grid_cols),
-            shape=(14,),
+            shape=(12 + (self.n_players - 1) * 2,),
             dtype=np.int32,
         )
         return obs_space
@@ -62,9 +67,7 @@ class parallel_env(ParallelEnv):
 
     def _get_obs(self, agent):
         snake_body = self.game.snakes[agent]
-        other_snake_body = self.game.snakes[1 - agent]
         snake_head_position = snake_body[0]
-        other_snake_head_position = other_snake_body[0]
         target_position = self.game.target_position
 
         def is_coord_free(coord):
@@ -75,7 +78,7 @@ class parallel_env(ParallelEnv):
 
             is_free = (
                 coord not in snake_body
-                and coord not in other_snake_body
+                and all(coord not in other_snake for other_snake in self.game.snakes)
                 and coord[0] >= 0
                 and coord[0] < self.grid_rows
                 and coord[1] >= 0
@@ -83,12 +86,20 @@ class parallel_env(ParallelEnv):
             )
             return max(self.grid_rows, self.grid_cols) if is_free else 0
 
-        return np.array(
+        # Collect head positions of all snakes
+        head_positions = []
+        for i in range(self.game.n_players):
+            if i != agent:
+                other_snake_body = self.game.snakes[i]
+                other_snake_head_position = other_snake_body[0]
+                head_positions.extend(other_snake_head_position)
+
+        # Add the target position and free coordinates around the snake's head
+        observation = np.array(
             [
                 snake_head_position[0],
                 snake_head_position[1],
-                other_snake_head_position[0],
-                other_snake_head_position[1],
+                *head_positions,
                 target_position[0],
                 target_position[1],
                 is_coord_free([snake_head_position[0], snake_head_position[1] - 1]),
@@ -102,6 +113,8 @@ class parallel_env(ParallelEnv):
             ],
             dtype=np.int32,
         )
+
+        return observation
 
     def _get_info(self, agent):
         return {
@@ -136,47 +149,25 @@ class parallel_env(ParallelEnv):
         return observations, infos
 
     def step(self, actions):
-        player_one_action = actions["player_0"]
-        player_two_action = actions["player_1"]
-
         truncations = {agent: False for agent in self.agents}
         terminations = {agent: False for agent in self.agents}
-
         rewards = {agent: 0 for agent in self.agents}
 
-        # input("Press Enter to continue...")
-        # print("Player 0 action: ", player_one_action)
-        # print("Player 1 action: ", player_two_action)
+        for agent in self.agents:
+            agent_index = self._getAgentIndexFromName(agent)
+            action = snake.SnakeAction(actions[agent])
+            collided, target_reached = self.game.perform_action(agent_index, action)
 
-        p1_collided, p1_target_reached = self.game.perform_action(
-            self._getAgentIndexFromName("player_0"),
-            snake.SnakeAction(player_one_action),
-        )
+            if collided:
+                rewards[agent] = -1
+                terminations[agent] = True
+                # Terminate all players if one collides
+                for other_agent in self.agents:
+                    terminations[other_agent] = True
 
-        p2_collided, p2_target_reached = self.game.perform_action(
-            self._getAgentIndexFromName("player_1"),
-            snake.SnakeAction(player_two_action),
-        )
-
-        if p1_collided:
-            rewards["player_0"] = -1
-            terminations["player_0"] = True
-            terminations["player_1"] = True
-
-        if p2_collided:
-            rewards["player_1"] = -1
-            terminations["player_1"] = True
-            terminations["player_0"] = True
-
-        if p1_target_reached:
-            rewards["player_0"] = 1
-
-        if p2_target_reached:
-            rewards["player_1"] = 1
-
-        # input("Press Enter to continue...")
-        # print(self._get_obs(0))
-        # print(self._get_obs(1))
+            if target_reached:
+                print(f"Agent {agent} reached the target!")
+                rewards[agent] = 1
 
         # Check truncation conditions (e.g. max iterations)
         truncations = {agent: False for agent in self.agents}
