@@ -128,7 +128,7 @@ class SnakeGameEnv(gym.Env):
             reward = -100
             done = True
 
-        if self.total_steps >= 1000:
+        if self.total_steps >= 1500:
             done = True
 
         observation = self._get_obs()

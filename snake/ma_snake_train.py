@@ -33,7 +33,7 @@ def train_model(
 
     if record:
         env = RecordVideo(
-            env, video_folder="videos", episode_trigger=lambda x: x % 250 == 0
+            env, video_folder="videos", episode_trigger=lambda x: x % 500 == 0
         )
         env.start_video_recorder()
 
@@ -42,6 +42,7 @@ def train_model(
         env,
         verbose=1,
         tensorboard_log="tlogs/",
+        ent_coef=0.001,
         # exploration_initial_eps=1.5,
         # exploration_fraction=0.01,
         # exploration_final_eps=0.1,
