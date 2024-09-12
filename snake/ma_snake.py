@@ -15,7 +15,7 @@ class SnakeAction(IntEnum):
 class SnakeGame:
 
     def __init__(
-        self, grid_rows=30, grid_cols=30, n_players=2, fps=4, render_mode=None
+        self, grid_rows=30, grid_cols=30, n_players=4, fps=4, render_mode=None
     ):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
@@ -60,8 +60,7 @@ class SnakeGame:
 
     def is_coord_free(self, coord):
         is_free = (
-            coord not in self.snakes[0]
-            and coord not in self.snakes[1]
+            all(coord not in snake for snake in self.snakes)
             and coord[0] >= 0
             and coord[0] < self.grid_rows
             and coord[1] >= 0
@@ -87,6 +86,7 @@ class SnakeGame:
         self._set_random_target_position()
 
     def _check_collision(self, snake):
+        # Check if the snake's head is out of bounds
         if (
             snake[0][0] < 0
             or snake[0][0] >= self.grid_rows
@@ -95,13 +95,14 @@ class SnakeGame:
         ):
             return True
 
+        # Check if the snake's head collides with its own body
         if snake[0] in snake[1:]:
             return True
 
-        other_snake = self.snakes[1 - self.snakes.index(snake)]
-
-        if snake[0] in other_snake:
-            return True
+        # Check if the snake's head collides with any other snake's body
+        for other_snake in self.snakes:
+            if other_snake != snake and snake[0] in other_snake:
+                return True
 
         return False
 
@@ -170,15 +171,28 @@ class SnakeGame:
 
         self.window.fill((0, 0, 0))
 
-        # Iterate over each snake and draw its segments
+        # Define a list of colors for the snakes
+        snake_colors = [
+            (0, 255, 0),  # Green for the first snake
+            (0, 0, 255),  # Blue for the second snake
+            (255, 255, 0),  # Yellow for the third snake
+            (255, 0, 255),  # Magenta for the fourth snake
+            # Add more colors if you have more snakes
+        ]
+
         print("Rendering frame: ", self.frame)
         print("Render mode: ", self.render_mode)
         self.frame += 1
+
+        # Iterate over each snake and draw its segments
         for index, snake in enumerate(self.snakes):
+            color = snake_colors[
+                index % len(snake_colors)
+            ]  # Cycle through colors if more snakes than colors
             for segment in snake:
                 pygame.draw.rect(
                     self.window,
-                    (0, 255, 0) if index == 0 else (0, 0, 255),
+                    color,
                     pygame.Rect(
                         segment[1] * self.cell_width,
                         segment[0] * self.cell_height,
@@ -187,16 +201,29 @@ class SnakeGame:
                     ),
                 )
 
-        # Draw the target
-        pygame.draw.rect(
+        # Draw the target with a white stroke
+        stroke_width = 2  # Adjust the stroke width as needed
+
+        # Draw the white stroke
+        pygame.draw.circle(
             self.window,
-            (255, 0, 0) if index == 0 else (0, 255, 255),
-            pygame.Rect(
-                self.target_position[1] * self.cell_width,
-                self.target_position[0] * self.cell_height,
-                self.cell_width,
-                self.cell_height,
+            (255, 255, 255),  # White for the stroke
+            center=(
+                self.target_position[1] * self.cell_width + self.cell_width // 2,
+                self.target_position[0] * self.cell_height + self.cell_height // 2,
             ),
+            radius=(self.cell_height // 2) + stroke_width,
+        )
+
+        # Draw the red target
+        pygame.draw.circle(
+            self.window,
+            (255, 0, 0),  # Red for the target
+            center=(
+                self.target_position[1] * self.cell_width + self.cell_width // 2,
+                self.target_position[0] * self.cell_height + self.cell_height // 2,
+            ),
+            radius=self.cell_height // 2,
         )
 
         pygame.event.pump()

@@ -1,13 +1,12 @@
 import functools
 
 import gymnasium as gym
+import ma_snake as snake
 import numpy as np
 from gymnasium import spaces
 from pettingzoo import ParallelEnv
 from pettingzoo.test import parallel_api_test
 from pettingzoo.utils import agent_selector, parallel_to_aec, wrappers
-
-import ma_snake as snake
 
 NUM_ITERS = 10000
 
@@ -67,9 +66,6 @@ class parallel_env(ParallelEnv):
         snake_head_position = snake_body[0]
         other_snake_head_position = other_snake_body[0]
         target_position = self.game.target_position
-
-        def pos_plus_movement(pos, movement):
-            return [pos[0] + movement[0], pos[1] + movement[1]]
 
         def is_coord_free(coord):
             snake_neck = snake_body[1] if len(snake_body) > 1 else None
