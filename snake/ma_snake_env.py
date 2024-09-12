@@ -39,7 +39,7 @@ class parallel_env(ParallelEnv):
         self.grid_cols = grid_cols
         self.render_mode = render_mode
         self.game = snake.SnakeGame(
-            grid_rows=grid_rows, grid_cols=grid_cols, fps=4, render_mode=render_mode
+            grid_rows=grid_rows, grid_cols=grid_cols, fps=30, render_mode=render_mode
         )
 
         self.possible_agents = ["player_" + str(r) for r in range(2)]
@@ -49,7 +49,7 @@ class parallel_env(ParallelEnv):
         obs_space = spaces.Box(
             low=0,
             high=max(self.grid_rows, self.grid_cols),
-            shape=(7,),
+            shape=(14,),
             dtype=np.int32,
         )
         return obs_space
@@ -65,23 +65,18 @@ class parallel_env(ParallelEnv):
         snake_body = self.game.snakes[agent]
         other_snake_body = self.game.snakes[1 - agent]
         snake_head_position = snake_body[0]
+        other_snake_head_position = other_snake_body[0]
         target_position = self.game.target_position
-
-        dirs_to_check = []
-        curr_dir = self.game.snake_directions[agent]
-        if curr_dir == snake.SnakeAction.UP:
-            dirs_to_check = [[-1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeAction.DOWN:
-            dirs_to_check = [[1, 0], [0, -1], [0, 1]]
-        elif curr_dir == snake.SnakeAction.LEFT:
-            dirs_to_check = [[0, -1], [-1, 0], [1, 0]]
-        elif curr_dir == snake.SnakeAction.RIGHT:
-            dirs_to_check = [[0, 1], [-1, 0], [1, 0]]
 
         def pos_plus_movement(pos, movement):
             return [pos[0] + movement[0], pos[1] + movement[1]]
 
         def is_coord_free(coord):
+            snake_neck = snake_body[1] if len(snake_body) > 1 else None
+
+            if coord == snake_neck:
+                return 0
+
             is_free = (
                 coord not in snake_body
                 and coord not in other_snake_body
@@ -96,11 +91,18 @@ class parallel_env(ParallelEnv):
             [
                 snake_head_position[0],
                 snake_head_position[1],
+                other_snake_head_position[0],
+                other_snake_head_position[1],
                 target_position[0],
                 target_position[1],
-                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[0])),
-                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[1])),
-                is_coord_free(pos_plus_movement(snake_head_position, dirs_to_check[2])),
+                is_coord_free([snake_head_position[0], snake_head_position[1] - 1]),
+                is_coord_free([snake_head_position[0], snake_head_position[1] + 1]),
+                is_coord_free([snake_head_position[0] + 1, snake_head_position[1]]),
+                is_coord_free([snake_head_position[0] - 1, snake_head_position[1]]),
+                is_coord_free([snake_head_position[0] - 1, snake_head_position[1] - 1]),
+                is_coord_free([snake_head_position[0] + 1, snake_head_position[1] + 1]),
+                is_coord_free([snake_head_position[0] - 1, snake_head_position[1] + 1]),
+                is_coord_free([snake_head_position[0] + 1, snake_head_position[1] - 1]),
             ],
             dtype=np.int32,
         )
@@ -146,9 +148,9 @@ class parallel_env(ParallelEnv):
 
         rewards = {agent: 0 for agent in self.agents}
 
-        input("Press Enter to continue...")
-        print("Player 0 action: ", player_one_action)
-        print("Player 1 action: ", player_two_action)
+        # input("Press Enter to continue...")
+        # print("Player 0 action: ", player_one_action)
+        # print("Player 1 action: ", player_two_action)
 
         p1_collided, p1_target_reached = self.game.perform_action(
             self._getAgentIndexFromName("player_0"),
@@ -176,9 +178,9 @@ class parallel_env(ParallelEnv):
         if p2_target_reached:
             rewards["player_1"] = 1
 
-        input("Press Enter to continue...")
-        print(self._get_obs(0))
-        print(self._get_obs(1))
+        # input("Press Enter to continue...")
+        # print(self._get_obs(0))
+        # print(self._get_obs(1))
 
         # Check truncation conditions (e.g. max iterations)
         truncations = {agent: False for agent in self.agents}

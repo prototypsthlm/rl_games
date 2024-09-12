@@ -122,6 +122,8 @@ class SnakeGame:
         snake_direction = self.snake_directions[snake_index]
         if not self._is_valid_action(snake_direction, action):
             action = snake_direction
+        else:
+            print("Invalid action from player", snake_index)
 
         if action == SnakeAction.UP:
             new_head = [snake_body[0][0] - 1, snake_body[0][1]]

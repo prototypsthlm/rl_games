@@ -98,5 +98,5 @@ if __name__ == "__main__":
     env_kwargs = {}
 
     # Train a model (takes ~3 minutes on GPU)
-    # train_butterfly_supersuit(env_fn, steps=2000000, seed=None, **env_kwargs)
+    train_butterfly_supersuit(env_fn, steps=500000, seed=None, **env_kwargs)
     eval(env_fn, num_games=10, render_mode="human", **env_kwargs)
