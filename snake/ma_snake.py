@@ -1,3 +1,4 @@
+import colorsys
 import random
 import sys
 from enum import Enum, IntEnum
@@ -174,6 +175,16 @@ class SnakeGame:
 
         return False, False
 
+    def generate_colors(self, n):
+        colors = []
+        for i in range(n):
+            hue = i / n
+            lightness = 0.5
+            saturation = 1.0
+            rgb = colorsys.hls_to_rgb(hue, lightness, saturation)
+            colors.append(tuple(int(c * 255) for c in rgb))
+        return colors
+
     def render(self):
         if self.render_mode not in ["human", "rgb_array"]:
             return
@@ -181,13 +192,7 @@ class SnakeGame:
         self.window.fill((0, 0, 0))
 
         # Define a list of colors for the snakes
-        snake_colors = [
-            (0, 255, 0),  # Green for the first snake
-            (0, 0, 255),  # Blue for the second snake
-            (255, 255, 0),  # Yellow for the third snake
-            (255, 0, 255),  # Magenta for the fourth snake
-            # Add more colors if you have more snakes
-        ]
+        snake_colors = self.generate_colors(self.n_players)
 
         print("Rendering frame: ", self.frame)
         print("Render mode: ", self.render_mode)
