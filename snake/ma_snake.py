@@ -21,6 +21,8 @@ class SnakeGame:
         self.grid_cols = grid_cols
         self.render_mode = render_mode
         self.n_players = n_players
+        self.is_training = False
+        self.dead_snakes = []
         self._set_random_snake_positions()
         self.fps = fps
         self.frame = 0
@@ -82,6 +84,7 @@ class SnakeGame:
     def reset(self, seed=None):
         random.seed(seed)
         self.frame = 0
+        self.dead_snakes = []
         self.snake_directions = [SnakeAction.DOWN for _ in range(self.n_players)]
         self._set_random_snake_positions()
         self._set_random_target_position()
@@ -115,10 +118,15 @@ class SnakeGame:
         return False
 
     def _move_snake(self, snake_index, new_head):
+        if snake_index in self.dead_snakes and not self.is_training:
+            return False, False
         snake = self.snakes[snake_index]
         snake.insert(0, new_head)
         found_target = self._checkFoundTarget(snake)
         collided = self._check_collision(snake)
+        if collided:
+            self.dead_snakes.append(snake_index)
+
         if not found_target:
             snake.pop()
         return collided, found_target

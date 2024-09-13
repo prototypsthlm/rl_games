@@ -4,10 +4,12 @@ import glob
 import os
 import time
 
-import ma_snake_env as snake
+import numpy as np
 import supersuit as ss
 from stable_baselines3 import PPO
 from stable_baselines3.ppo import MlpPolicy
+
+import ma_snake_env as snake
 
 
 def train_butterfly_supersuit(
@@ -67,7 +69,7 @@ def eval(env_fn, num_games: int = 100, render_mode: str | None = None, **env_kwa
     # SB3 models are designed for single-agent settings, we get around this by using he same model for every agent
     env.reset()
     for game in range(num_games):
-        env.reset(seed=game)
+        env.reset()
         for agent in env.agent_iter():
             obs, reward, termination, truncation, info = env.last()
 
@@ -78,7 +80,7 @@ def eval(env_fn, num_games: int = 100, render_mode: str | None = None, **env_kwa
                 print(
                     f"Agent: {agent} has terminated: {termination} or been truncated: {truncation}"
                 )
-                break
+
             else:
                 action, _ = model.predict(observation=obs, deterministic=True)
 
@@ -97,5 +99,5 @@ if __name__ == "__main__":
     env_kwargs = {}
 
     # Train a model (takes ~3 minutes on GPU)
-    # train_butterfly_supersuit(env_fn, steps=5000000, seed=None, **env_kwargs)
+    # train_butterfly_supersuit(env_fn, steps=1000000, seed=None, **env_kwargs)
     eval(env_fn, num_games=10, render_mode="human", **env_kwargs)

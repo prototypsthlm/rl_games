@@ -1,12 +1,13 @@
 import functools
 
 import gymnasium as gym
-import ma_snake as snake
 import numpy as np
 from gymnasium import spaces
 from pettingzoo import ParallelEnv
 from pettingzoo.test import parallel_api_test
 from pettingzoo.utils import agent_selector, parallel_to_aec, wrappers
+
+import ma_snake as snake
 
 NUM_ITERS = 10000
 
@@ -37,7 +38,7 @@ class parallel_env(ParallelEnv):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
-        self.n_players = 4
+        self.n_players = 8
         self.game = snake.SnakeGame(
             grid_rows=grid_rows,
             grid_cols=grid_cols,
@@ -53,7 +54,7 @@ class parallel_env(ParallelEnv):
         obs_space = spaces.Box(
             low=0,
             high=max(self.grid_rows, self.grid_cols),
-            shape=(12 + (self.n_players - 1) * 2,),
+            shape=(12,),
             dtype=np.int32,
         )
         return obs_space
@@ -99,7 +100,6 @@ class parallel_env(ParallelEnv):
             [
                 snake_head_position[0],
                 snake_head_position[1],
-                *head_positions,
                 target_position[0],
                 target_position[1],
                 is_coord_free([snake_head_position[0], snake_head_position[1] - 1]),
@@ -161,9 +161,10 @@ class parallel_env(ParallelEnv):
             if collided:
                 rewards[agent] = -1
                 terminations[agent] = True
+                self._removeAgent(agent)
                 # Terminate all players if one collides
-                for other_agent in self.agents:
-                    terminations[other_agent] = True
+                # for other_agent in self.agents:
+                #     terminations[other_agent] = True
 
             if target_reached:
                 print(f"Agent {agent} reached the target!")
@@ -183,10 +184,6 @@ class parallel_env(ParallelEnv):
 
         new_infos = {agent: self._get_info(agent) for agent in self.agents}
 
-        # Dont know what this does.
-        if any(terminations.values()) or all(truncations.values()):
-            self.agents = []
-
         if self.render_mode == "human":
             self.render()
 
@@ -194,6 +191,11 @@ class parallel_env(ParallelEnv):
 
     def render(self):
         return self.game.render()
+
+    def _removeAgent(self, agent):
+        agent_index = self._getAgentIndexFromName(agent)
+        self.game.dead_snakes.append(agent_index)
+        self.agents.remove(agent)
 
 
 if __name__ == "__main__":
